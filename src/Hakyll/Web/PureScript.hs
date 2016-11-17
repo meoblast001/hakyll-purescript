@@ -16,6 +16,7 @@ module Hakyll.Web.PureScript
 
 import Control.Monad.Writer.Strict
 import Data.Functor
+import Data.Text (pack, unpack)
 import qualified Data.Map as Map
 import Hakyll.Core.Compiler
 import Hakyll.Core.Identifier
@@ -66,8 +67,8 @@ ioCompiler options filenameAndContents = do
   tmpDir <- getTemporaryDirectory
   let tmpWorkDir = tmpDir ++ "/purescript-hakyll"
   -- Try to parse the modules from the PureScript file.
-  case parseModulesFromFiles id [filenameAndContents] of
-    Left errors -> fail $ prettyPrintMultipleErrors True errors
+  case parseModulesFromFiles id [fmap pack filenameAndContents] of
+    Left errors -> fail $ prettyPrintMultipleErrors defaultPPEOptions errors
     Right filesAndModules -> do
       let modules = map snd filesAndModules
           modNamesToFiles =
@@ -80,7 +81,7 @@ ioCompiler options filenameAndContents = do
       -- Compile the PureScript to JavaScript.
       (successOrErrors, _) <- runMake options $ make makeActions modules
       case successOrErrors of
-        Left errors -> fail $ prettyPrintMultipleErrors True errors
+        Left errors -> fail $ prettyPrintMultipleErrors defaultPPEOptions errors
         Right _ -> do
           -- Load the module contents for all output modules.
           moduleContents <- mapM (loadModuleContents tmpWorkDir) modules
